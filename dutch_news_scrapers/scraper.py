@@ -39,6 +39,6 @@ class Scraper:
         if self.URL_MATCH:
             return self.URL_MATCH
         elif self.DOMAIN:
-            return f"https://([^/]*\\.)?{self.DOMAIN}/"
+            return f"https?://([^/]*\\.)?{self.DOMAIN}/"
         else:
             raise Exception("Specify either DOMAIN or URL_MATCH")

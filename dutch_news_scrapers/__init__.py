@@ -1,6 +1,5 @@
 from dutch_news_scrapers.scraper import Scraper
-from dutch_news_scrapers.scrapers import ADScraper, NOSScraper, NUScraper, VKScraper, TELScraper, RTLScraper, \
-    NRCScraper, TRWScraper
+from dutch_news_scrapers.scrapers import *
 
 SCRAPERS = None
 
@@ -16,5 +15,19 @@ def all_scrapers(**kargs):
             RTLScraper(**kargs),
             NRCScraper(**kargs),
             TRWScraper(**kargs),
-            ]
+            OmroepFlevolandScraper(**kargs),
+            OmroepGelderlandScraper(**kargs),
+            OmroepZeelandScraper(**kargs),
+            OmroepRijnmondScraper(**kargs),
+            RTVUtrechtScraper(**kargs),
+            RTVOostScraper(**kargs),
+            RTVNoordScraper(**kargs),
+            NHNieuwsScraper(**kargs),
+            LimburgScraper(**kargs),
+            OmroepBrabantScraper(**kargs),
+            OmroepFryslanScraper(**kargs),
+            AT5Scraper(**kargs),
+            RTVDrentheScraper(**kargs),
+            OmroepWestScraper(**kargs)
+                    ]
     return SCRAPERS

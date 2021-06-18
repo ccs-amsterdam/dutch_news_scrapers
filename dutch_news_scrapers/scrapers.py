@@ -163,3 +163,159 @@ class RTLScraper(Scraper):
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
         return text
+    
+    
+
+class OmroepFlevolandScraper(Scraper):
+    DOMAIN = "omroepflevoland.nl"
+    
+    def parse_html(self, page: Element) -> str:
+        text = page.cssselect("section.article__content > p")
+        text = "\n\n".join(p.text_content() for p in text)
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+class NHNieuwsScraper(Scraper):
+    DOMAIN = "nhnieuws.nl"
+
+    def parse_html(self, page: Element) -> str:
+
+        lead = page.cssselect("div.container--detail.intro__text")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.container--detail.detail-text > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+class OmroepGelderlandScraper(Scraper):
+    DOMAIN = "omroepgelderland.nl"
+
+    def parse_html(self, page: Element) -> str:
+
+        lead = page.cssselect("div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class OmroepZeelandScraper(Scraper):
+    DOMAIN = "omroepzeeland.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class OmroepRijnmondScraper(Scraper):
+    DOMAIN = "rijnmond.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("article.article-content div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+class RTVUtrechtScraper(Scraper):
+    DOMAIN = "rtvutrecht.nl"
+
+    def parse_html(self, page: Element) -> str:
+        text = page.cssselect("section.page-content > article")
+        text = text[0].text_content() 
+        return text
+
+class RTVOostScraper(Scraper):
+    DOMAIN = "rtvoost.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+
+class LimburgScraper(Scraper):
+    DOMAIN = "1limburg.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.article-lead")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.article-body > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class AT5Scraper(Scraper):
+    DOMAIN = "AT5.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.container--detail.intro__text")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.container--detail.detail-text > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class OmroepWestScraper(Scraper):
+    DOMAIN = "omroepwest.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class RTVDrentheScraper(Scraper):
+    DOMAIN = "rtvdrenthe.nl"
+
+    def parse_html(self, page: Element) -> str:
+        lead = page.cssselect("div.intro")
+        lead = lead[0].text_content()
+        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative > p")
+        text2 = "\n\n".join(p.text_content() for p in text1)
+        text = f"{lead}\n\n{text2}"
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class OmroepFryslanScraper(Scraper):
+    DOMAIN = "omropfryslan.nl"
+
+    def parse_html(self, page: Element) -> str:
+        text1 = page.cssselect("div.article_textwrap > p")
+        text = "\n\n".join(p.text_content() for p in text1)
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
+
+
+class OmroepBrabantScraper(Scraper):
+    DOMAIN = "omroepbrabant.nl"
+
+    def parse_html(self, page: Element) -> str:
+        text1 = page.cssselect("div.cap-width-Tq > div.content-2v")
+        text = "\n\n".join(p.text_content() for p in text1)
+        text = re.sub("\n\n\s*", "\n\n", text)
+        return text
