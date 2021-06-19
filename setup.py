@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="dutch_news_scrapers",
-    version="0.1",
+    version="0.3",
     description="Generic Dutch News Scrapers",
     author="Wouter van Atteveldt",
     author_email="wouter@vanatteveldt.com",

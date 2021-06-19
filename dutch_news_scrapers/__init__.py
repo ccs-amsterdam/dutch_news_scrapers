@@ -21,7 +21,6 @@ def all_scrapers(**kargs):
             OmroepRijnmondScraper(**kargs),
             RTVUtrechtScraper(**kargs),
             RTVOostScraper(**kargs),
-            RTVNoordScraper(**kargs),
             NHNieuwsScraper(**kargs),
             LimburgScraper(**kargs),
             OmroepBrabantScraper(**kargs),
