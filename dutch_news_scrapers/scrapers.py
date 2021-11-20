@@ -2,6 +2,38 @@ import re
 from lxml.html import Element
 from lxml import html
 from dutch_news_scrapers.scraper import Scraper
+import logging
+
+class WebDriverException(Exception):
+    """
+    Base webdriver exception.
+    """
+
+    def __init__(self, msg=None, screen=None, stacktrace=None):
+        self.msg = msg
+        self.screen = screen
+        self.stacktrace = stacktrace
+
+    def __str__(self):
+        exception_msg = "Message: %s\n" % self.msg
+        if self.screen is not None:
+            exception_msg += "Screenshot: available via screen\n"
+        if self.stacktrace is not None:
+            stacktrace = "\n".join(self.stacktrace)
+            exception_msg += "Stacktrace:\n%s" % stacktrace
+        return exception_msg
+
+class NoSuchElementException(WebDriverException):
+    """
+    Thrown when element could not be found.
+
+    If you encounter this exception, you may want to check the following:
+        * Check your selector used in your find_by...
+        * Element may not yet be on the screen at the time of the find operation,
+          (webpage is still loading) see selenium.webdriver.support.wait.WebDriverWait()
+          for how to write a wait wrapper to wait for an element to appear.
+    """
+    pass
 
 def create_cookie(domain, name, value):
     return {
@@ -39,7 +71,8 @@ class TELScraper(Scraper):
         lead_ps = tree.cssselect('p.ArticleIntroBlock__paragraph')
         body_ps = tree.xpath('//div[@data-element="articleBodyBlocks"]/p')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
-        return text
+        mediumspecifiek = "De Telegraaf"
+        return text, mediumspecifiek
 
 
 class VKScraper(Scraper):
@@ -64,7 +97,9 @@ class VKScraper(Scraper):
         body_ps = tree.cssselect('p.artstyle__text')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "De Volkskrant"
+        return text, mediumspecifiek
+
 
 class TRWScraper(Scraper):
     DOMAIN = "trouw.nl"
@@ -89,7 +124,9 @@ class TRWScraper(Scraper):
         body_ps = tree.cssselect('p.artstyle__text')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Trouw"
+        return text, mediumspecifiek
+
 
 
 class ADScraper(Scraper):
@@ -111,8 +148,8 @@ class ADScraper(Scraper):
         body_ps = tree.cssselect('p.article__paragraph')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
-
+        mediumspecifiek = "Algemeen Dagblad"
+        return text, mediumspecifiek
 
 class NUScraper(Scraper):
     DOMAIN = "nu.nl"
@@ -128,8 +165,8 @@ class NUScraper(Scraper):
                 text = page.cssselect('div.block-content')
         text = "\n\n".join(p.text_content() for p in text)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
-
+        mediumspecifiek = "NU.nl"
+        return text, mediumspecifiek
 
 class NOSScraper(Scraper):
     DOMAIN = "nos.nl"
@@ -142,7 +179,9 @@ class NOSScraper(Scraper):
                 text = page.cssselect("div.article_textwrap")
         text = "\n\n".join(p.text_content() for p in text)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "NOS.nl"
+        return text, mediumspecifiek
+
 
 class NRCScraper(Scraper):
     DOMAIN = "nrc.nl"
@@ -152,7 +191,9 @@ class NRCScraper(Scraper):
         body_ps = page.cssselect('div.content.article__content > p')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "NRC Handelsblad"
+        return text, mediumspecifiek
+
 
 class RTLScraper(Scraper):
     DOMAIN = "rtlnieuws.nl"
@@ -162,8 +203,8 @@ class RTLScraper(Scraper):
         body_ps = page.cssselect('div.paragraph.paragraph--type--paragraph-text')
         text = "\n\n".join(p.text_content() for p in lead_ps + body_ps)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
-    
+        mediumspecifiek = "RTL.nl"
+        return text, mediumspecifiek
     
 
 class OmroepFlevolandScraper(Scraper):
@@ -173,20 +214,27 @@ class OmroepFlevolandScraper(Scraper):
         text = page.cssselect("section.article__content > p")
         text = "\n\n".join(p.text_content() for p in text)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Omroep Flevoland"
+        return text, mediumspecifiek
+
 
 class NHNieuwsScraper(Scraper):
     DOMAIN = "nhnieuws.nl"
 
     def parse_html(self, page: Element) -> str:
-
-        lead = page.cssselect("div.container--detail.intro__text")
-        lead = lead[0].text_content()
+        try:
+            lead = page.cssselect("div.container--detail.intro__text")
+            lead = lead[0].text_content()
+        except IndexError:
+            logging.warning(f"Could not find article {page}")
+            lead = " "
         text1 = page.cssselect("div.container--detail.detail-text > p")
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "NHNieuws"
+        return text, mediumspecifiek
+
 
 class OmroepGelderlandScraper(Scraper):
     DOMAIN = "omroepgelderland.nl"
@@ -199,8 +247,8 @@ class OmroepGelderlandScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
-
+        mediumspecifiek = "Omroep Gelderland"
+        return text, mediumspecifiek
 
 class OmroepZeelandScraper(Scraper):
     DOMAIN = "omroepzeeland.nl"
@@ -212,7 +260,9 @@ class OmroepZeelandScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Omroep Zeeland"
+        return text, mediumspecifiek
+
 
 
 class OmroepRijnmondScraper(Scraper):
@@ -225,15 +275,19 @@ class OmroepRijnmondScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "RTV Rijnmond"
+        return text, mediumspecifiek
+
 
 class RTVUtrechtScraper(Scraper):
     DOMAIN = "rtvutrecht.nl"
 
     def parse_html(self, page: Element) -> str:
         text = page.cssselect("section.page-content > article")
-        text = text[0].text_content() 
-        return text
+        text = text[0].text_content()
+        mediumspecifiek = "RTV Utrecht"
+        return text, mediumspecifiek
+
 
 class RTVOostScraper(Scraper):
     DOMAIN = "rtvoost.nl"
@@ -245,8 +299,8 @@ class RTVOostScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
-
+        mediumspecifiek = "RTV Oost"
+        return text, mediumspecifiek
 
 
 class LimburgScraper(Scraper):
@@ -259,7 +313,8 @@ class LimburgScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "1Limburg"
+        return text, mediumspecifiek
 
 
 class AT5Scraper(Scraper):
@@ -272,7 +327,9 @@ class AT5Scraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "AT5"
+        return text, mediumspecifiek
+
 
 
 class OmroepWestScraper(Scraper):
@@ -285,7 +342,9 @@ class OmroepWestScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Omroep West"
+        return text, mediumspecifiek
+
 
 
 class RTVDrentheScraper(Scraper):
@@ -298,7 +357,9 @@ class RTVDrentheScraper(Scraper):
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "RTV Drenthe"
+        return text, mediumspecifiek
+
 
 
 class OmroepFryslanScraper(Scraper):
@@ -308,7 +369,8 @@ class OmroepFryslanScraper(Scraper):
         text1 = page.cssselect("div.article_textwrap > p")
         text = "\n\n".join(p.text_content() for p in text1)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Omrop Fryslan"
+        return text, mediumspecifiek
 
 
 class OmroepBrabantScraper(Scraper):
@@ -318,4 +380,5 @@ class OmroepBrabantScraper(Scraper):
         text1 = page.cssselect("div.cap-width-Tq > div.content-2v")
         text = "\n\n".join(p.text_content() for p in text1)
         text = re.sub("\n\n\s*", "\n\n", text)
-        return text
+        mediumspecifiek = "Omroep Brabant"
+        return text, mediumspecifiek
