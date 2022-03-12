@@ -1,7 +1,7 @@
 import re
 from lxml.html import Element
 from lxml import html
-from dutch_news_scrapers.scraper import Scraper
+from .scraper import Scraper
 import logging
 
 class WebDriverException(Exception):

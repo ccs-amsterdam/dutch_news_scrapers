@@ -15,5 +15,7 @@ setup(
     install_requires=[
         "requests",
         "lxml",
+        "cssselect",
+        "amcat4apiclient"
     ]
 )
