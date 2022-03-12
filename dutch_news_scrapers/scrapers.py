@@ -140,7 +140,7 @@ class ADScraper(Scraper):
     def scrape_text(self, url):
         page = self.session.get(url)
         if page.status_code == 404:
-            return
+            raise SkipArticle()
         page.raise_for_status()
         open("/tmp/test7.html", "w").write(page.text)
         tree = html.fromstring(page.text)
@@ -336,9 +336,9 @@ class OmroepWestScraper(Scraper):
     DOMAIN = "omroepwest.nl"
 
     def parse_html(self, page: Element) -> str:
-        lead = page.cssselect("div.intro")
+        lead = page.cssselect("div.text")
         lead = lead[0].text_content()
-        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative > p")
+        text1 = page.cssselect("div.text")
         text2 = "\n\n".join(p.text_content() for p in text1)
         text = f"{lead}\n\n{text2}"
         text = re.sub("\n\n\s*", "\n\n", text)

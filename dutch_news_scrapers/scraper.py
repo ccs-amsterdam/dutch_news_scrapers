@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Iterable, List, Optional, Any, Union, Tuple, Set
 
 import requests
 from lxml.html import Element
 from lxml import html
 import re
+
 
 class Scraper:
     URL_MATCH = None
@@ -18,10 +19,8 @@ class Scraper:
     def initialize(self):
         pass
 
-    def scrape_text(self, url: str):
+    def scrape_text(self, url: str) -> Tuple[str, str]:
         page = self.session.get(url)
-        if "advertorial" in url:
-            return
         page.raise_for_status()
         open("/tmp/test7.html", "w").write(page.text)
         tree = html.fromstring(page.text)
