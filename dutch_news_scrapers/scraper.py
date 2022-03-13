@@ -11,6 +11,12 @@ class ArticleDoesNotExist(Exception):
     pass
 
 
+DEFAULT_COLUMNS = {"tags": "tag",
+                   "author": "keyword",
+                   "publisher": "keyword",
+                   }
+
+
 class TextScraper:
     """
     Scraper to get the text for an article whose metadata is already scraped (e.g. through RSS or LN/Coosto)
@@ -60,6 +66,7 @@ class Scraper(TextScraper):
     PAGES_RANGE = None
     PAGE_START: int = 0
     PAGE_STEP: int = 1
+    COLUMNS: dict = None
 
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
@@ -143,3 +150,9 @@ class Scraper(TextScraper):
         :return: dict with at least title and date keys
         """
         raise NotImplementedError()
+
+    def columns(self) -> dict:
+        result = {**DEFAULT_COLUMNS}
+        if self.COLUMNS:
+            result.update(self.COLUMNS)
+        return result

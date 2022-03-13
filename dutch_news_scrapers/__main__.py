@@ -1,6 +1,8 @@
 import argparse
+import datetime
 import json
 import logging
+from typing import Iterable
 
 from amcat4apiclient import AmcatClient
 
@@ -25,13 +27,30 @@ def run(args):
     conn = AmcatClient(args.server, "admin", "admin")
     if not conn.check_index(args.index):
         conn.create_index(args.index)
+    conn.set_fields(args.index, scraper.columns())
 
     logging.info(f"Scraping {scraper} into AmCAT {args.server}:{args.index}")
     urls = {a.get('url') for a in conn.query(args.index, filters={"publisher": scraper.PUBLISHER}, fields=["url"])}
 
     logging.info(f"Already {len(urls)} in AmCAT")
 
+    def filter_by_from_date(articles: Iterable[dict], from_date: datetime.date):
+        for a in articles:
+            if date(a['date']) < from_date:
+                break
+            yield a
+
+    def filter_by_to_date(articles: Iterable[dict], to_date: datetime.date):
+        for a in articles:
+            if date(a['date']) <= to_date:
+                yield a
+
     articles = scraper.scrape_articles(urls)
+    if args.from_date:
+        articles = filter_by_from_date(articles, from_date=args.from_date)
+    if args.to_date:
+        articles = filter_by_to_date(articles, to_date=args.from_date)
+
     for batch in get_chunks(articles, batch_size=args.batchsize):
         print(f"!!! Uploading {len(batch)} articles")
         conn.upload_documents(args.index, batch)
@@ -39,8 +58,23 @@ def run(args):
 
 def scrapeurl(args):
     scraper_class = get_scraper_for_url(args.url)
-    a = scraper_class().scrape_text(args.url)
-    print(a)
+    if issubclass(scraper_class, Scraper):
+        a = scraper_class().scrape_article(args.url)
+        print(json.dumps(a, indent=4))
+    else:
+        a = scraper_class().scrape_text(args.url)
+        print(a)
+
+
+def date(s):
+    try:
+        if "T" in s:
+            return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+        else:
+            return datetime.datetime.strptime(s, "%Y-%m-%d")
+    except ValueError:
+        msg = "not a valid date: {0!r}".format(s)
+        raise argparse.ArgumentTypeError(msg)
 
 
 parser = argparse.ArgumentParser()
@@ -54,6 +88,8 @@ p.add_argument("server", help="AmCAT host name",)
 p.add_argument("index", help="AmCAT index")
 p.add_argument("publisher", help="Publisher of the scraper to run")
 p.add_argument("--batchsize", help="Batch size for uploading to AmCAT", type=int, default=100)
+p.add_argument("--from_date", type=date)
+p.add_argument("--to_date", type=date)
 p.set_defaults(func=run)
 
 p = subparsers.add_parser('scrape-url', help='Run a scraper for a single article')

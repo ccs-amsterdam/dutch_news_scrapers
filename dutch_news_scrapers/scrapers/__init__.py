@@ -2,13 +2,13 @@ import sys
 from importlib import import_module
 from inspect import getmembers, isclass
 from pkgutil import iter_modules
-from typing import Iterable
+from typing import Iterable, Type
 from urllib.parse import urlparse
 
 from dutch_news_scrapers.scraper import TextScraper, Scraper
 
 
-def get_all_scrapers() -> Iterable[type[TextScraper]]:
+def get_all_scrapers() -> Iterable[Type[TextScraper]]:
     """
     Return all scrapers in submodules of the .scrapers module
     """

@@ -8,6 +8,8 @@ class OmroepSpakenburgScraper(Scraper):
     PAGES_RANGE = 200
     PAGE_START = 1
     PUBLISHER = 'omroepspakenburg'
+    DOMAIN = 'omroepspakenburg.nl'
+    COLUMNS = {'views': 'long'}
 
     def meta_from_dom(self, dom):
         article = {}
