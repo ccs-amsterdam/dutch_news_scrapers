@@ -1,10 +1,6 @@
 import datetime
 import locale
-import re
-import requests
-from lxml import html
-from .scraper import Scraper
-from typing import Iterable
+from dutch_news_scrapers.scraper import Scraper
 
 
 class OmroepSpakenburgScraper(Scraper):

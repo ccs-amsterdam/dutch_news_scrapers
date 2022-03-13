@@ -1,24 +1,23 @@
 import logging
-from typing import Iterable, List, Optional, Any, Union, Tuple, Set
+from typing import Iterable, Optional
 
 import requests
-from lxml.html import Element, HtmlElement
-from lxml import html
-import re
+from lxml.html import HtmlElement
 
-from dutch_news_scrapers.tools import serialize
+from dutch_news_scrapers.tools import serialize, response_to_dom
 
 
 class ArticleDoesNotExist(Exception):
     pass
 
-class Scraper:
+
+class TextScraper:
+    """
+    Scraper to get the text for an article whose metadata is already scraped (e.g. through RSS or LN/Coosto)
+    """
     DOMAIN: str = None
     PUBLISHER: str = None
-    PAGES_URL: str = None
-    PAGES_RANGE = None
-    PAGE_START: int = 0
-    PAGE_STEP: int = 1
+    TEXT_CSS: str = None  # CSS Selector for text elements (e.g. paragraphs, sub headers)
 
     def __init__(self, proxies: Optional[dict]=None):
         self.session = requests.session()
@@ -39,9 +38,28 @@ class Scraper:
         :return: the text of the article
         """
         page = self.session.get(url)
-        page.raise_for_status()
-        tree = html.fromstring(page.text)
-        return self.text_from_html(tree)
+        return self.text_from_dom(response_to_dom(page))
+
+    def text_from_dom(self, dom: HtmlElement) -> str:
+        """
+        Scrape the given article page, returning a completed dict (except for url) that can be uploaded to AmCAT.
+        :param dom: the parsed web page
+        :return: the text of the article
+        """
+        if self.TEXT_CSS:
+            ps = [x.text_content() for x in dom.cssselect(self.TEXT_CSS)]
+            ps = [p.strip() for p in ps if p.strip()]
+            return "\n\n".join(ps)
+        else:
+            raise NotImplementedError("Scraper should provide TEXT_CSS, override text_from_html, "
+                                      "or override scrape_article")
+
+
+class Scraper(TextScraper):
+    PAGES_URL: str = None
+    PAGES_RANGE = None
+    PAGE_START: int = 0
+    PAGE_STEP: int = 1
 
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
@@ -78,11 +96,10 @@ class Scraper:
         if self.PAGES_URL is None:
             raise Exception("Please specify PAGES_URL")
         page = requests.get(self.PAGES_URL.format(page=page))
-        page.raise_for_status()
-        tree = html.fromstring(page.text)
-        return self.get_links_from_html(tree)
+        dom = response_to_dom(page)
+        return self.get_links_from_dom(dom)
 
-    def get_links_from_html(self, tree: HtmlElement) -> Iterable[str]:
+    def get_links_from_dom(self, tree: HtmlElement) -> Iterable[str]:
         """
         Get the links from a parsed HTML page
         :param tree: an lxml.Element representing the selected page
@@ -104,13 +121,11 @@ class Scraper:
             if err.response.status_code in (403, 404, 410):
                 raise ArticleDoesNotExist() from err
             raise
-        r.raise_for_status()
-
-        tree = html.fromstring(r.text)
-        article = self.meta_from_html(tree)
+        dom = response_to_dom(r)
+        article = self.meta_from_dom(dom)
         if 'publisher' not in article and self.PUBLISHER:
             article['publisher'] = self.PUBLISHER
-        article['text'] = self.text_from_html(tree)
+        article['text'] = self.text_from_dom(dom)
         if not article.get('text', '').strip():
             import json; print(json.dumps(article, indent=2, default=serialize))
             raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
@@ -119,18 +134,10 @@ class Scraper:
                 del article[key]
         return article
 
-    def meta_from_html(self, html: HtmlElement) -> dict:
+    def meta_from_dom(self, dom: HtmlElement) -> dict:
         """
         Scrape all relevant meta information from this article
-        :param html: the parsed web page
+        :param dom: the parsed web page
         :return: dict with at least title and date keys
-        """
-        raise NotImplementedError()
-
-    def text_from_html(self, html: HtmlElement) -> str:
-        """
-        Scrape the given article page, returning a completed dict (except for url) that can be uploaded to AmCAT.
-        :param html: the parsed web page
-        :return: the text of the article
         """
         raise NotImplementedError()

@@ -1,7 +1,7 @@
 import re
 from lxml.html import Element
 from lxml import html
-from .scraper import Scraper
+from dutch_news_scrapers.scraper import Scraper
 import logging
 
 class WebDriverException(Exception):
@@ -205,11 +205,11 @@ class RTLScraper(Scraper):
         text = re.sub("\n\n\s*", "\n\n", text)
         mediumspecifiek = "RTL.nl"
         return text, mediumspecifiek
-    
+
 
 class OmroepFlevolandScraper(Scraper):
     DOMAIN = "omroepflevoland.nl"
-    
+
     def parse_html(self, page: Element) -> str:
         text = page.cssselect("section.article__content > p")
         text = "\n\n".join(p.text_content() for p in text)
@@ -265,28 +265,6 @@ class OmroepZeelandScraper(Scraper):
 
 
 
-class OmroepRijnmondScraper(Scraper):
-    DOMAIN = "rijnmond.nl"
-
-    def parse_html(self, page: Element) -> str:
-        lead = page.cssselect("article.article-content div.intro")
-        lead = lead[0].text_content()
-        text1 = page.cssselect("div.customhtml.newsitem-customhtml.position-relative p")
-        text2 = "\n\n".join(p.text_content() for p in text1)
-        text = f"{lead}\n\n{text2}"
-        text = re.sub("\n\n\s*", "\n\n", text)
-        mediumspecifiek = "RTV Rijnmond"
-        return text, mediumspecifiek
-
-
-class RTVUtrechtScraper(Scraper):
-    DOMAIN = "rtvutrecht.nl"
-
-    def parse_html(self, page: Element) -> str:
-        text = page.cssselect("section.page-content > article")
-        text = text[0].text_content()
-        mediumspecifiek = "RTV Utrecht"
-        return text, mediumspecifiek
 
 
 class RTVOostScraper(Scraper):
@@ -362,15 +340,6 @@ class RTVDrentheScraper(Scraper):
 
 
 
-class OmroepFryslanScraper(Scraper):
-    DOMAIN = "omropfryslan.nl"
-
-    def parse_html(self, page: Element) -> str:
-        text1 = page.cssselect("div.article_textwrap > p")
-        text = "\n\n".join(p.text_content() for p in text1)
-        text = re.sub("\n\n\s*", "\n\n", text)
-        mediumspecifiek = "Omrop Fryslan"
-        return text, mediumspecifiek
 
 
 class OmroepBrabantScraper(Scraper):

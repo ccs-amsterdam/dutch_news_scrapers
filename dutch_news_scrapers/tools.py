@@ -1,3 +1,9 @@
+import logging
+import re
+
+from lxml import html
+from lxml.html import HtmlElement
+
 
 def serialize(obj):
     """JSON serializer that accepts datetime & date"""
@@ -20,3 +26,22 @@ def get_chunks(sequence, batch_size):
             buffer = []
     if buffer:
         yield buffer
+
+
+def encoding_from_html(tree: HtmlElement):
+    for m in tree.cssselect("meta"):
+        content = m.get('content')
+        if m.get("http-equiv") == "Content-Type" and 'charset' in content:
+            if match := re.search("charset=([^;]+)", content):
+                return match.group(1)
+
+
+def response_to_dom(response):
+    response.raise_for_status()
+    dom = html.fromstring(response.text)
+    enc = encoding_from_html(dom)
+    if enc and response.encoding != enc:
+        logging.warning(f"Switching encoding to {enc}")
+        response.encoding = enc
+        dom = html.fromstring(response.text)
+    return dom
