@@ -126,6 +126,8 @@ class Scraper(TextScraper):
         if 'publisher' not in article and self.PUBLISHER:
             article['publisher'] = self.PUBLISHER
         article['text'] = self.text_from_dom(dom)
+        if 'url' not in article:
+            article['url'] = url
         if not article.get('text', '').strip():
             import json; print(json.dumps(article, indent=2, default=serialize))
             raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
