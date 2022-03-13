@@ -2,13 +2,64 @@ import argparse
 import datetime
 import json
 import logging
+from collections import Counter
 from typing import Iterable
 
 from amcat4apiclient import AmcatClient
+from requests import HTTPError
 
 from dutch_news_scrapers.scraper import Scraper
 from dutch_news_scrapers.scrapers import get_all_scrapers, get_scraper_for_publisher, get_scraper_for_url
 from dutch_news_scrapers.tools import get_chunks
+
+
+def texts_status(args):
+    conn = AmcatClient(args.server, "admin", "admin")
+    counts = {}
+
+    for d in conn.query(args.index, fields=["publisher", "url", "status"]):
+        publisher = d['publisher']
+        if publisher not in counts:
+            counts[publisher] = {"complete": 0, "incomplete": 0, "missing": 0, "skip": 0}
+        c = counts[publisher]
+        if 'url' not in d:
+            c['skip'] += 1
+        elif d['status'] == "incomplete":
+            try:
+                scraper = get_scraper_for_url(d['url'])
+                c['incomplete'] += 1
+            except ValueError:
+                c['missing'] += 1
+        else:
+            c['complete'] += 1
+    print(f"{'Publisher':30} {'Complete':>10} {'Incomplete':>10} {'Missing':>10} {'Skip':>10}")
+    for publisher, c in counts.items():
+        print(f"{publisher:30} {c['complete']:10} {c['incomplete']:10} {c['missing']:10} {c['skip']:10}")
+
+
+def update_texts(args):
+    scraper_class = get_scraper_for_publisher(args.publisher)
+    scraper = scraper_class()
+    conn = AmcatClient(args.server, "admin", "admin")
+    articles = conn.query(args.index, fields=["url"], filters={'publisher': args.publisher, 'status': 'incomplete'})
+    n = 0
+    for d in articles:
+        url = d.get('url')
+        print(f"  {d['_id']}: {url}")
+        if not url:
+            continue
+        try:
+            text = scraper.scrape_text(url)
+        except HTTPError as e:
+            if e.response.status_code in (403, 404):
+                logging.warning(f"HTTP {e.response.status_code} on {url}, setting status to error and skipping")
+                conn.update_document(args.index, d['_id'], {'status': 'error'})
+                continue
+            else:
+                raise
+        n += 1
+        conn.update_document(args.index, d['_id'], {'text': text, 'status': 'complete'})
+    print(f"Updated {n} documents")
 
 
 def listscrapers(args):
@@ -23,6 +74,7 @@ def listscrapers(args):
 def run(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper = scraper_class()
+    assert issubclass(scraper, Scraper)
 
     conn = AmcatClient(args.server, "admin", "admin")
     if not conn.check_index(args.index):
@@ -91,6 +143,17 @@ p.add_argument("--batchsize", help="Batch size for uploading to AmCAT", type=int
 p.add_argument("--from_date", type=date)
 p.add_argument("--to_date", type=date)
 p.set_defaults(func=run)
+
+p = subparsers.add_parser('texts-update', help='Add texts to existing documents')
+p.add_argument("server", help="AmCAT host name",)
+p.add_argument("index", help="AmCAT index")
+p.add_argument("publisher", help="Publisher of the scraper to run")
+p.set_defaults(func=update_texts)
+
+p = subparsers.add_parser('texts-status', help='View text and scraper status')
+p.add_argument("server", help="AmCAT host name",)
+p.add_argument("index", help="AmCAT index")
+p.set_defaults(func=texts_status)
 
 p = subparsers.add_parser('scrape-url', help='Run a scraper for a single article')
 p.add_argument("url", help="URL of the article to scrape")

@@ -53,12 +53,19 @@ class TextScraper:
         :return: the text of the article
         """
         if self.TEXT_CSS:
-            ps = [x.text_content() for x in dom.cssselect(self.TEXT_CSS)]
+            ps = [get_text(x) for x in dom.cssselect(self.TEXT_CSS)]
             ps = [p.strip() for p in ps if p.strip()]
             return "\n\n".join(ps)
         else:
             raise NotImplementedError("Scraper should provide TEXT_CSS, override text_from_html, "
                                       "or override scrape_article")
+
+
+def get_text(element):
+    #Thanks https://stackoverflow.com/questions/18660382
+    for br in element.xpath(".//br"):
+        br.tail = "\n\n" + br.tail if br.tail else "\n\n"
+    return element.text_content()
 
 
 class Scraper(TextScraper):

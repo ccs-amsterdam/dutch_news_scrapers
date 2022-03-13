@@ -19,14 +19,14 @@ def get_all_scrapers() -> Iterable[Type[TextScraper]]:
                 yield obj
 
 
-def get_scraper_for_publisher(publisher: str):
+def get_scraper_for_publisher(publisher: str) -> Type[TextScraper]:
     for scraper in get_all_scrapers():
         if scraper.PUBLISHER == publisher:
             return scraper
     raise ValueError(f"Could not find scraper for publisher {publisher}")
 
 
-def get_scraper_for_url(url: str):
+def get_scraper_for_url(url: str) -> Type[TextScraper]:
     domain = urlparse(url).netloc
     for scraper in get_all_scrapers():
         if scraper.DOMAIN and scraper.DOMAIN in domain:
