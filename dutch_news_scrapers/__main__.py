@@ -74,7 +74,7 @@ def listscrapers(args):
 def run(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper = scraper_class()
-    assert issubclass(scraper, Scraper)
+    assert isinstance(scraper, Scraper)
 
     conn = AmcatClient(args.server, "admin", "admin")
     if not conn.check_index(args.index):

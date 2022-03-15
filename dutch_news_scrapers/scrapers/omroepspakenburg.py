@@ -3,7 +3,7 @@ import locale
 from dutch_news_scrapers.scraper import Scraper
 
 
-class OmroepSpakenburgScraper(Scraper):
+class OmroepSpakenburgScraper(scraper):
     PAGES_URL = "https://www.omroepspakenburg.nl/category/nieuws/page/{page}"
     PAGES_RANGE = 200
     PAGE_START = 1
