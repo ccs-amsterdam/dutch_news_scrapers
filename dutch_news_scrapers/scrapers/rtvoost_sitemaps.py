@@ -1,4 +1,8 @@
-import itertools
+import requests
+
+from lxml import etree
+import xmltodict
+
 import logging
 from typing import Iterable
 
@@ -9,9 +13,9 @@ from dutch_news_scrapers.scraper import TextScraper, Scraper
 from dutch_news_scrapers.tools import response_to_dom
 
 
-class RTVOostScraper(Scraper):
+class RTVOostSitemapScraper(Scraper):
     DOMAIN = "rtvoost.nl"
-    PUBLISHER = "RTV Oost"
+    PUBLISHER = "RTV Oost Sitemap"
     TEXT_CSS = ".article-content div.text, .article-content h2"
     API_URL = 'https://api.regiogroei.cloud/page/allenieuws?page=nieuws&id=allenieuws'
     HEADERS = {'Accept': 'application/vnd.groei.overijssel+json;v=5.0',
@@ -24,19 +28,16 @@ class RTVOostScraper(Scraper):
     CONTINUE_ON_ERROR = True
 
     def get_links(self) -> Iterable[str]:
-        # RTV Oost does not have an archive and API only goes 1 week back, so try all possible article numbers
-        for id in range(self.START_ARTICLE_ID, self.STOP_ARTICLE_ID):
-            while True:
-                url = f"https://www.rtvoost.nl/nieuws/{id}/-"
-                r = requests.head(url)
-                logging.info(f"HTTP {r.status_code}: {url}")
-                if r.status_code == 404:
-                    break
-                if r.status_code == 302:
-                    url = r.headers['Location']
-                    yield f"https://www.rtvoost.nl{url}"
-                    break
-                logging.warning("Unexpected status code! Sleeping 5 minutes and retrying")
+        r = requests.get("https://www.rtvoost.nl/sitemap/sitemap.xml.gz")
+        raw = xmltodict.parse(r.text)
+        data = [r["loc"] for r in raw["sitemapindex"]["sitemap"]]
+        for d in data:
+            r = requests.get(d)
+            raw = xmltodict.parse(r.text)
+            urls = [r["loc"] for r in raw["urlset"]["url"]]
+            for url in urls:
+                if url.startswith("https://www.rtvoost.nl/nieuws/"):
+                    yield url
 
     def meta_from_dom(self, dom: HtmlElement) -> dict:
         meta = {m.get('data-hid'): m.get('content') for m in dom.cssselect("meta")}
@@ -51,6 +52,7 @@ class RTVOostScraper(Scraper):
         if 'article:modified_time' in meta:
             art['modified_date'] = meta['article:modified_time']
         return art
+
 
 
 

@@ -40,7 +40,15 @@ def texts_status(args):
 def update_texts(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper = scraper_class()
-    conn = AmcatClient(args.server, "admin", "admin")
+    conn = AmcatClient(args.server)
+
+    try:
+        conn.create_index(args.index)
+    except HTTPError as e:
+        # Probably, index already exists
+        return
+
+
     articles = conn.query(args.index, fields=["url"], filters={'publisher': args.publisher, 'status': 'incomplete'})
     n = 0
     for d in articles:
@@ -74,9 +82,11 @@ def listscrapers(args):
 def run(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper = scraper_class()
-    assert isinstance(scraper, Scraper)
+   # assert isinstance(scraper, Scraper)
 
-    conn = AmcatClient(args.server, "admin", "admin")
+    conn = AmcatClient(args.server)
+    if args.delete_index:
+        conn.delete_index(args.index)
     if not conn.check_index(args.index):
         conn.create_index(args.index)
     conn.set_fields(args.index, scraper.columns())
@@ -105,7 +115,11 @@ def run(args):
 
     for batch in get_chunks(articles, batch_size=args.batchsize):
         print(f"!!! Uploading {len(batch)} articles")
-        conn.upload_documents(args.index, batch)
+        if not args.dry_run:
+            conn.upload_documents(args.index, batch)
+        else:
+            for article in batch:
+                print(json.dumps(article, indent=2))
 
 
 def scrapeurl(args):
@@ -142,6 +156,8 @@ p.add_argument("publisher", help="Publisher of the scraper to run")
 p.add_argument("--batchsize", help="Batch size for uploading to AmCAT", type=int, default=100)
 p.add_argument("--from_date", type=date)
 p.add_argument("--to_date", type=date)
+p.add_argument("--dry-run", action="store_true")
+p.add_argument("--delete-index", action="store_true", help="Delete (and recreate) index before scraping")
 p.set_defaults(func=run)
 
 p = subparsers.add_parser('texts-update', help='Add texts to existing documents')

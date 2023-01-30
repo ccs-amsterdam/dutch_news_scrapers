@@ -4,7 +4,7 @@ from typing import Iterable, Optional
 import requests
 from lxml.html import HtmlElement
 
-from dutch_news_scrapers.tools import serialize, response_to_dom
+from dutch_news_scrapers.tools import response_to_dom
 
 
 class ArticleDoesNotExist(Exception):
@@ -16,7 +16,7 @@ DEFAULT_COLUMNS = {"tags": "tag",
                    "publisher": "keyword",
                    }
 
-
+ 
 class TextScraper:
     """
     Scraper to get the text for an article whose metadata is already scraped (e.g. through RSS or LN/Coosto)
@@ -74,6 +74,7 @@ class Scraper(TextScraper):
     PAGE_START: int = 0
     PAGE_STEP: int = 1
     COLUMNS: dict = None
+    CONTINUE_ON_ERROR = False
 
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
@@ -90,6 +91,11 @@ class Scraper(TextScraper):
                 yield self.scrape_article(url)
             except ArticleDoesNotExist as e:
                 logging.warning(f"Article {url} does not exist: {e}")
+            except Exception as e:
+                if self.CONTINUE_ON_ERROR:
+                    logging.exception(f"Exception on scraping {url}:")
+                else:
+                    raise
 
     def get_links(self) -> Iterable[str]:
         """
@@ -101,6 +107,7 @@ class Scraper(TextScraper):
         for page in range(self.PAGE_START, self.PAGES_RANGE, self.PAGE_STEP):
             # yield from self.get_links_from_page(page) # zelfde als for x in ... yield x
             logging.info(f"Scraping page {page}")
+            print(f"page is {page}")
             yield from self.get_links_from_page(page)
 
     def get_links_from_page(self, page: int) -> Iterable[str]:
@@ -129,12 +136,9 @@ class Scraper(TextScraper):
         :return: dict with all needed article fields
         """
         logging.info(f"scraping article for {url}")
-        try:
-            r = requests.get(url)
-        except requests.HTTPError as err:
-            if err.response.status_code in (403, 404, 410):
-                raise ArticleDoesNotExist() from err
-            raise
+        r = requests.get(url)
+        if r.status_code in (403, 404, 410):
+            raise ArticleDoesNotExist(f"HTTP {r.status_code}: {url}")
         dom = response_to_dom(r)
         article = self.meta_from_dom(dom)
         if 'publisher' not in article and self.PUBLISHER:
