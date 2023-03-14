@@ -25,14 +25,12 @@ class Salland747Scraper(Scraper):
                "modified_date": "date"}
 
     def get_links(self) -> Iterable[str]:
-        pages = [3,2]
-        for p in pages:
-            r = requests.get(f"https://www.salland747.nl/wp-sitemap-posts-post-{p}.xml", headers=HEADERS)
-            raw = xmltodict.parse(r.text)
-            urls = [r["loc"] for r in raw["urlset"]["url"]]
-            for url in urls:
-                print(url)
-                yield url
+        r = requests.get(f"https://www.salland747.nl/wp-sitemap-posts-post-3.xml", headers=HEADERS)
+        raw = xmltodict.parse(r.text)
+        urls = [r["loc"] for r in reversed(raw["urlset"]["url"])]
+        for url in urls:
+            print(url)
+            yield url
 
     def scrape_article(self, url: str) -> dict:
         logging.info(f"scraping article for {url}")
@@ -44,6 +42,8 @@ class Salland747Scraper(Scraper):
         if 'publisher' not in article and self.PUBLISHER:
             article['publisher'] = self.PUBLISHER
         article['text'] = self.text_from_dom(dom)
+        if not article['text']:
+            article['text']="-"
         if 'url' not in article:
             article['url'] = url
         if not article.get('text', '').strip():

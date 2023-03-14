@@ -7,7 +7,7 @@ from typing import Iterable
 import logging
 
 import requests
-from amcat4apiclient import AmcatClient
+from amcat4py import AmcatClient
 from lxml.html import HtmlElement
 
 from dutch_news_scrapers.scraper import TextScraper, Scraper, ArticleDoesNotExist
@@ -28,7 +28,6 @@ def strip_html(s: str):
     s = html.unescape(s)
     return s.strip()
 
-
 class IndebuurtDeventer(Scraper):
     PUBLISHER = "IndebuurtDeventer"
     TEXT_CSS = "div.entry__content p, div.entry__content h2"
@@ -40,7 +39,7 @@ class IndebuurtDeventer(Scraper):
     def get_links(self) -> Iterable[str]:
         r = requests.get("https://indebuurt.nl/deventer/post-sitemap8.xml")
         raw = xmltodict.parse(r.text)
-        urls = [r["loc"] for r in raw["urlset"]['url']]
+        urls = [r["loc"] for r in reversed(raw["urlset"]['url'])]
         for url in urls:
             yield url
 
@@ -60,7 +59,6 @@ class IndebuurtDeventer(Scraper):
         meta = dom.cssselect("div.entry__meta li")
         locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
         date = meta[0].text_content().strip()
-        print(date)
         article['date'] = datetime.datetime.strptime(date, "%d %B %Y").isoformat()
         article['author'] = meta[1].text_content().strip()
         if not article['author']:
@@ -68,7 +66,6 @@ class IndebuurtDeventer(Scraper):
         tags = dom.cssselect("div.subjects a")
         tag = " , ".join(t.text_content() for t in tags)
         article['tags'] = tag
-        print(article)
         return article
 
 

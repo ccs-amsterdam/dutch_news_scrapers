@@ -36,7 +36,7 @@ def encoding_from_html(tree: HtmlElement):
                 return match.group(1)
 
 
-def response_to_dom(response):
+def response_to_dom(response) -> HtmlElement:
     response.raise_for_status()
     dom = html.fromstring(response.text)
     enc = encoding_from_html(dom)

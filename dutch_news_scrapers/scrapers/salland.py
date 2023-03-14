@@ -49,5 +49,7 @@ class Salland1Scraper(Scraper):
     def text_from_dom(self, dom):
         body_ps = dom.cssselect('div.tdb-block-inner p,td')
         text = "\n\n".join(p.text_content() for p in body_ps).strip()
+        if not text:
+            text = "-"
         return text
 

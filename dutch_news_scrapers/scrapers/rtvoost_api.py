@@ -9,7 +9,7 @@ from dutch_news_scrapers.tools import response_to_dom
 
 class RTVOostScraper(Scraper):
     DOMAIN = "rtvoost.nl"
-    PUBLISHER = "RTV Oost"
+    PUBLISHER = "RTV Oost2"
     TEXT_CSS = ".article-content div.text, .article-content h2"
     API_URL = 'https://api.regiogroei.cloud/page/allenieuws?page=nieuws&id=allenieuws'
     HEADERS = {'Accept': 'application/vnd.groei.overijssel+json;v=5.0',

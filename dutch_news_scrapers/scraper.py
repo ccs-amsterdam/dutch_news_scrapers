@@ -5,6 +5,7 @@ import requests
 from lxml.html import HtmlElement
 
 from dutch_news_scrapers.tools import response_to_dom
+import xmltodict
 
 
 class ArticleDoesNotExist(Exception):
@@ -69,12 +70,15 @@ def get_text(element):
 
 
 class Scraper(TextScraper):
+    DOMAIN = None
     PAGES_URL: str = None
     PAGES_RANGE = None
     PAGE_START: int = 0
     PAGE_STEP: int = 1
+    SITEMAP_URL = None
     COLUMNS: dict = None
     CONTINUE_ON_ERROR = False
+
 
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
@@ -83,32 +87,50 @@ class Scraper(TextScraper):
         """
         if urls is None:
             urls = set()
-        for url in self.get_links():
-            if url in urls:
+        for d in self.get_links():
+            if isinstance(d,str):
+                d = dict(url=d)
+            if d['url'] in urls:
                 continue
-            urls.add(url)
+            urls.add(d['url'])
             try:
-                yield self.scrape_article(url)
+                yield self.scrape_article_dict(d)
             except ArticleDoesNotExist as e:
-                logging.warning(f"Article {url} does not exist: {e}")
+                logging.warning(f"Article {d} does not exist: {e}")
             except Exception as e:
                 if self.CONTINUE_ON_ERROR:
-                    logging.exception(f"Exception on scraping {url}:")
+                    logging.exception(f"Exception on scraping {d}:")
                 else:
                     raise
 
+    def scrape_article_dict(self,d):
+        art = self.scrape_article(d['url'])
+        d.update(art)
+        return d
+    
     def get_links(self) -> Iterable[str]:
         """
         Generates all links and optional extra metadata from e.g. newspaper front page
         Returns a iterable of dictionaries {"url": url, ...}
         """
         if self.PAGES_RANGE is None:
-            raise Exception("Please specify PAGES_RANGE or override get_links")
-        for page in range(self.PAGE_START, self.PAGES_RANGE, self.PAGE_STEP):
-            # yield from self.get_links_from_page(page) # zelfde als for x in ... yield x
-            logging.info(f"Scraping page {page}")
-            print(f"page is {page}")
-            yield from self.get_links_from_page(page)
+            r = requests.get(self.SITEMAP_URL)
+            raw = xmltodict.parse(r.text)
+            data = [r["loc"] for r in raw["sitemapindex"]["sitemap"]]
+            for d in data:
+                r = requests.get(d)
+                raw = xmltodict.parse(r.text)
+                urls = [r["loc"] for r in raw["urlset"]["url"]]
+                for url in urls:
+                    if url.startswith(f"{self.DOMAIN}/nieuws/"):
+                        yield url
+        else:
+            for page in range(self.PAGE_START, self.PAGES_RANGE, self.PAGE_STEP):
+                # yield from self.get_links_from_page(page) # zelfde als for x in ... yield x
+                logging.info(f"Scraping page {page}")
+                yield from self.get_links_from_page(page)
+
+        
 
     def get_links_from_page(self, page: int) -> Iterable[str]:
         """
@@ -147,7 +169,7 @@ class Scraper(TextScraper):
         if 'url' not in article:
             article['url'] = url
         if not article.get('text', '').strip():
-            import json; print(json.dumps(article, indent=2, default=serialize))
+            import json; print(json.dumps(article, indent=2, default=str))
             raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
         for key in set(article.keys()) - {"date", "text", "title", "url"}:
             if article[key] is None:

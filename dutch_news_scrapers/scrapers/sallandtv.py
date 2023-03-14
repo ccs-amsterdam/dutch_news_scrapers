@@ -17,7 +17,7 @@ class SallandTVScraper(Scraper):
     PAGE_START = 1
     DOMAIN = "sallandtv.nl"
     PUBLISHER = "SallandTV"
-   # TEXT_CSS = "div.tdb-block-inner p"
+    TEXT_CSS = "div.tdb-block-inner p"
     COLUMNS = {"image_url": "url",
                "section": "keyword",
                "modified_date": "date"}
@@ -32,12 +32,11 @@ class SallandTVScraper(Scraper):
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         page = 1
         articles = self.get_links_from_page(page)
-        print(articles)
         for article in articles:
             if 'publisher' not in article and self.PUBLISHER:
                 article['publisher'] = self.PUBLISHER
-            print(article)
             try:
+                print(self.scrape_article(article['url']))
                 yield self.scrape_article(article['url'])
             except ArticleDoesNotExist as e:
                 logging.warning(f"Article {article['url']} does not exist: {e}")
@@ -61,6 +60,7 @@ class SallandTVScraper(Scraper):
         if not article.get('text', '').strip():
             import json; print(json.dumps(article, indent=2, default=serialize))
             raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
+        print(article)
         return article
 
 
@@ -86,6 +86,5 @@ class SallandTVScraper(Scraper):
     def text_from_dom(self, dom):
         body_ps = dom.cssselect('div.entry p')
         text = "\n\n".join(p.text_content() for p in body_ps).strip()
-        print(text)
         return text
 

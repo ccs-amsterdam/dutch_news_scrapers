@@ -50,6 +50,7 @@ class RTVOostScraper(Scraper):
         )
         if 'article:modified_time' in meta:
             art['modified_date'] = meta['article:modified_time']
+        print(art)
         return art
 
 

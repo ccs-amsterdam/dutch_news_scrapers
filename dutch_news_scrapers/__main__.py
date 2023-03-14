@@ -5,7 +5,7 @@ import logging
 from collections import Counter
 from typing import Iterable
 
-from amcat4apiclient import AmcatClient
+from amcat4py import AmcatClient
 from requests import HTTPError
 
 from dutch_news_scrapers.scraper import Scraper
@@ -14,7 +14,7 @@ from dutch_news_scrapers.tools import get_chunks
 
 
 def texts_status(args):
-    conn = AmcatClient(args.server, "admin", "admin")
+    conn = AmcatClient(args.server)
     counts = {}
 
     for d in conn.query(args.index, fields=["publisher", "url", "status"]):
@@ -85,6 +85,8 @@ def run(args):
    # assert isinstance(scraper, Scraper)
 
     conn = AmcatClient(args.server)
+    if conn.login_required():
+        conn.login()
     if args.delete_index:
         conn.delete_index(args.index)
     if not conn.check_index(args.index):
@@ -96,8 +98,12 @@ def run(args):
 
     logging.info(f"Already {len(urls)} in AmCAT")
 
+    # Scrapers should yield articles from newest to oldest, so we can break when passing the from_date
     def filter_by_from_date(articles: Iterable[dict], from_date: datetime.date):
         for a in articles:
+            print(f"articledate is {a['date']}, {type(a['date'])})")
+            print(f"fromdate is {from_date}, {type(from_date)})")
+
             if date(a['date']) < from_date:
                 break
             yield a
@@ -111,7 +117,7 @@ def run(args):
     if args.from_date:
         articles = filter_by_from_date(articles, from_date=args.from_date)
     if args.to_date:
-        articles = filter_by_to_date(articles, to_date=args.from_date)
+        articles = filter_by_to_date(articles, to_date=args.to_date)
 
     for batch in get_chunks(articles, batch_size=args.batchsize):
         print(f"!!! Uploading {len(batch)} articles")
@@ -133,14 +139,19 @@ def scrapeurl(args):
 
 
 def date(s):
-    try:
-        if "T" in s:
-            return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
-        else:
-            return datetime.datetime.strptime(s, "%Y-%m-%d")
-    except ValueError:
-        msg = "not a valid date: {0!r}".format(s)
-        raise argparse.ArgumentTypeError(msg)
+    if type(s) is str:
+        try:
+            if "T" in s:
+                return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+            elif " " in s:
+                return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+            else:
+                return datetime.datetime.strptime(s, "%Y-%m-%d")
+        except ValueError:
+            msg = "not a valid date: {0!r}".format(s)
+            raise argparse.ArgumentTypeError(msg)
+    else:
+        return s
 
 
 parser = argparse.ArgumentParser()

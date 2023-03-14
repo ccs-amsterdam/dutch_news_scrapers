@@ -5,8 +5,8 @@ import requests
 from typing import Iterable
 import xmltodict
 from lxml import html
-
 from dutch_news_scrapers.scraper import TextScraper, Scraper
+
 from dutch_news_scrapers.tools import response_to_dom
 
 from fake_useragent import UserAgent
@@ -29,7 +29,7 @@ class DeventerNieuwsSitemapScraper(Scraper):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1667.0 Safari/537.36'}
         r = requests.get("https://www.hetdeventernieuws.nl/post-sitemap9.xml", headers=headers)
         raw = xmltodict.parse(r.text)
-        urls = [r["loc"] for r in raw["urlset"]["url"]]
+        urls = [r["loc"] for r in reversed(raw["urlset"]["url"])]
         for url in urls:
             print(url)
             yield url

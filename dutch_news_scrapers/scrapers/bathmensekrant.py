@@ -11,7 +11,7 @@ class BathmenseScraper(Scraper):
     PAGES_RANGE = 10
     PAGE_START = 1
     DOMAIN = "bathmense.nl"
-    PUBLISHER = "BathmenseKrant"
+    PUBLISHER = "Bathmense Krant"
     TEXT_CSS = "div.art-postcontent p"
     COLUMNS = {"image_url": "url",
                "section": "keyword",
