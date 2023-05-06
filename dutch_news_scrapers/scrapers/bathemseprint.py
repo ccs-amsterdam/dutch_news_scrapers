@@ -19,15 +19,6 @@ from dutch_news_scrapers.scraper import Scraper
 from typing import Iterable
 
 
-#from dutch_news_scrapers.tools import response_to_dom
-
-
- #PAGE_URL = "https://indd.adobe.com/view/publication/36659e66-d103-49b2-968e-3e09b83b43c2/1"
-    #url = "https://indd.adobe.com/view/publication/36659e66-d103-49b2-968e-3e09b83b43c2/1/publication-web-resources/image/{i}.svgz"
-    
-#from dutch_news_scrapers.scraper import TextScraper, Scraper, ArticleDoesNotExist
-#from dutch_news_scrapers.tools import response_to_dom, serialize
-
 
 
 

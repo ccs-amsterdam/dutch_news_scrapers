@@ -13,9 +13,6 @@ class BathmenseScraper(Scraper):
     DOMAIN = "bathmense.nl"
     PUBLISHER = "Bathmense Krant"
     TEXT_CSS = "div.art-postcontent p"
-    COLUMNS = {"image_url": "url",
-               "section": "keyword",
-               "modified_date": "date"}
 
 
 
@@ -33,7 +30,7 @@ class BathmenseScraper(Scraper):
         locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
         date = dom.cssselect("span.entry-date.updated")
         date = date[0].text_content().strip()
-        article['date'] = datetime.datetime.strptime(date, "%d %B %Y").isoformat()
+        article['date'] = datetime.datetime.strptime(date, "%d %B %Y") 
         return article
 
     def text_from_dom(self, dom):

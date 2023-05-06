@@ -16,7 +16,7 @@ from dutch_news_scrapers.tools import response_to_dom
 class StedenDriehoekScraper(Scraper):
     PAGES_URL = "https://www.stedendriehoek.nl/deventer/page/{page}"
     DOMAIN = "stedendriehoek.nl/deventer"
-    PUBLISHER = "Stedendriehoek"
+    PUBLISHER = "Stedendriehoek Deventer"
     TEXT_CSS = "div.content p"
     COLUMNS = {"image_url": "url",
                "section": "keyword",
@@ -49,7 +49,7 @@ class StedenDriehoekScraper(Scraper):
         article['author'] = author.replace("Door","").replace("-","").strip()
         locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
         date = meta[1].strip()
-        article['date'] = datetime.datetime.strptime(date, "%d %b %Y").isoformat()
+        article['date'] = datetime.datetime.strptime(date, "%d %b %Y")
         return article
 
     def scrape_article(self, url: str) -> dict:

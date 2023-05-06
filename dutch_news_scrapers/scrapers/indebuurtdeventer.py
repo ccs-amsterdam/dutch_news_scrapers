@@ -29,7 +29,7 @@ def strip_html(s: str):
     return s.strip()
 
 class IndebuurtDeventer(Scraper):
-    PUBLISHER = "IndebuurtDeventer"
+    PUBLISHER = "Indebuurt Deventer"
     TEXT_CSS = "div.entry__content p, div.entry__content h2"
     COLUMNS = {"image_url": "url",
                "section": "keyword",
@@ -59,7 +59,7 @@ class IndebuurtDeventer(Scraper):
         meta = dom.cssselect("div.entry__meta li")
         locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
         date = meta[0].text_content().strip()
-        article['date'] = datetime.datetime.strptime(date, "%d %B %Y").isoformat()
+        article['date'] = datetime.datetime.strptime(date, "%d %B %Y")
         article['author'] = meta[1].text_content().strip()
         if not article['author']:
             article['author'] = "gesponsord"

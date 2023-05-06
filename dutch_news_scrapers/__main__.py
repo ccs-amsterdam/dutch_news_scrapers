@@ -81,7 +81,7 @@ def listscrapers(args):
 
 def run(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
-    scraper = scraper_class()
+    scraper: Scraper = scraper_class()
    # assert isinstance(scraper, Scraper)
 
     conn = AmcatClient(args.server)
@@ -98,34 +98,13 @@ def run(args):
 
     logging.info(f"Already {len(urls)} in AmCAT")
 
-    # Scrapers should yield articles from newest to oldest, so we can break when passing the from_date
-    def filter_by_from_date(articles: Iterable[dict], from_date: datetime.date):
-        for a in articles:
-            print(f"articledate is {a['date']}, {type(a['date'])})")
-            print(f"fromdate is {from_date}, {type(from_date)})")
+    articles = scraper.scrape_articles_by_date(urls, args.from_date, args.to_date)
 
-            if date(a['date']) < from_date:
-                break
-            yield a
-
-    def filter_by_to_date(articles: Iterable[dict], to_date: datetime.date):
-        for a in articles:
-            if date(a['date']) <= to_date:
-                yield a
-
-    articles = scraper.scrape_articles(urls)
-    if args.from_date:
-        articles = filter_by_from_date(articles, from_date=args.from_date)
-    if args.to_date:
-        articles = filter_by_to_date(articles, to_date=args.to_date)
-
-    for batch in get_chunks(articles, batch_size=args.batchsize):
-        print(f"!!! Uploading {len(batch)} articles")
-        if not args.dry_run:
-            conn.upload_documents(args.index, batch)
-        else:
-            for article in batch:
-                print(json.dumps(article, indent=2))
+    if not args.dry_run:
+        conn.upload_documents(args.index, articles)
+    else:
+        for article in articles:
+            print(json.dumps(article, indent=2))
 
 
 def scrapeurl(args):

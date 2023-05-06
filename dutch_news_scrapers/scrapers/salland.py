@@ -33,7 +33,7 @@ class Salland1Scraper(Scraper):
         locale.setlocale(locale.LC_ALL, 'nl_NL.UTF-8')
         date = dom.cssselect("time.entry-date")
         date = date[0].text_content().strip()
-        article['date'] = datetime.datetime.strptime(date, "%d %B %Y").isoformat()
+        article['date'] = datetime.datetime.strptime(date, "%d %B %Y") 
         return article
 
 

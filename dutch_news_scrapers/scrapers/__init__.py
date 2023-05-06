@@ -21,7 +21,6 @@ def get_all_scrapers() -> Iterable[Type[TextScraper]]:
 
 def get_scraper_for_publisher(publisher: str) -> Type[TextScraper]:
     for scraper in get_all_scrapers():
-        print(scraper)
         if scraper.PUBLISHER == publisher:
             return scraper
     raise ValueError(f"Could not find scraper for publisher {publisher}")

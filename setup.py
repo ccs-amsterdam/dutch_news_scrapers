@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="dutch_news_scrapers",
-    version="0.5",
+    version="0.6",
     description="Generic Dutch News Scrapers",
     author="Wouter van Atteveldt",
     author_email="wouter@vanatteveldt.com",
@@ -16,6 +16,8 @@ setup(
         "requests",
         "lxml",
         "cssselect",
-        "amcat4apiclient"
+        "amcat4apiclient",
+        "nltk",
+        "xmltodict"
     ]
 )

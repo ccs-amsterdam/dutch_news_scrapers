@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 from typing import Iterable, Optional
 
@@ -80,6 +81,28 @@ class Scraper(TextScraper):
     CONTINUE_ON_ERROR = False
 
 
+    def scrape_articles_by_date(self, urls=None, from_date:date=None, to_date:date=None):
+        # Scrapers should yield articles from newest to oldest, so we can break when passing the from_date
+        def filter_by_from_date(articles: Iterable[dict], from_date: date):
+            for a in articles:
+                if a['date'] < from_date:
+                    break
+                yield a
+
+        def filter_by_to_date(articles: Iterable[dict], to_date: date):
+            for a in articles:
+                if a['date'] <= to_date:
+                    yield a
+
+        articles = self.scrape_articles(urls)
+        if from_date:
+            articles = filter_by_from_date(articles, from_date=from_date)
+        if to_date:
+            articles = filter_by_to_date(articles, to_date=to_date)
+        return articles
+
+
+
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
         Scrape all articles from this scraper
@@ -93,6 +116,8 @@ class Scraper(TextScraper):
             if d['url'] in urls:
                 continue
             urls.add(d['url'])
+            if 'publisher' not in d and self.PUBLISHER:
+                d['publisher'] = self.PUBLISHER
             try:
                 yield self.scrape_article_dict(d)
             except ArticleDoesNotExist as e:
@@ -163,8 +188,6 @@ class Scraper(TextScraper):
             raise ArticleDoesNotExist(f"HTTP {r.status_code}: {url}")
         dom = response_to_dom(r)
         article = self.meta_from_dom(dom)
-        if 'publisher' not in article and self.PUBLISHER:
-            article['publisher'] = self.PUBLISHER
         article['text'] = self.text_from_dom(dom)
         if 'url' not in article:
             article['url'] = url
@@ -189,3 +212,5 @@ class Scraper(TextScraper):
         if self.COLUMNS:
             result.update(self.COLUMNS)
         return result
+
+

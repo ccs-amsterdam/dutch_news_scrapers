@@ -2,7 +2,7 @@ import requests
 
 from lxml import etree
 import xmltodict
-
+import datetime
 import logging
 from typing import Iterable
 
@@ -16,11 +16,13 @@ import re
 def fix_date(date):
     if date.endswith("Z"):
         date = re.sub("Z$", "", date)
+        print(date)
+        date = datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
     return date
 
 class RTVOostSitemapScraper(Scraper):
     DOMAIN = "https://www.rtvoost.nl"
-    PUBLISHER = "RTV Oost Sitemap"
+    PUBLISHER = "RTV Oost"
     TEXT_CSS = ".article-content div.text, .article-content h2"
     SITEMAP_URL = "https://www.rtvoost.nl/sitemap/sitemap.xml.gz"
     HEADERS = {'Accept': 'application/vnd.groei.overijssel+json;v=5.0',
