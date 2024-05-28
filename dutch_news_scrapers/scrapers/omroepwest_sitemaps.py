@@ -48,7 +48,7 @@ class OmroepWestScraper(Scraper):
             title = meta['og:title'],
             date = meta['article:published_time'],
             section = meta['article:section'],
-            image_url = meta['og:image'],
+        #    image_url = meta['og:image'],
             tags = tags
         )
         if 'article:modified_time' in meta:

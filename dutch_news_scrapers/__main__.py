@@ -24,7 +24,7 @@ def texts_status(args):
         c = counts[publisher]
         if 'url' not in d:
             c['skip'] += 1
-        elif d['status'] == "incomplete":
+        elif d.get('status') == "incomplete":
             try:
                 scraper = get_scraper_for_url(d['url'])
                 c['incomplete'] += 1
@@ -41,13 +41,6 @@ def update_texts(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper = scraper_class()
     conn = AmcatClient(args.server)
-
-    try:
-        conn.create_index(args.index)
-    except HTTPError as e:
-        # Probably, index already exists
-        return
-
 
     articles = conn.query(args.index, fields=["url"], filters={'publisher': args.publisher, 'status': 'incomplete'})
     n = 0

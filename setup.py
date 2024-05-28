@@ -18,6 +18,7 @@ setup(
         "cssselect",
         "amcat4apiclient",
         "nltk",
-        "xmltodict"
+        "xmltodict",
+        "fake_useragent"
     ]
 )
