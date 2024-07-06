@@ -5,7 +5,6 @@ import pytz
 
 import requests
 from lxml.html import HtmlElement
-
 from dutch_news_scrapers.tools import response_to_dom
 import xmltodict
 
@@ -28,9 +27,7 @@ class TextScraper:
 
     DOMAIN: str = None
     PUBLISHER: str = None
-    TEXT_CSS: str = (
-        None  # CSS Selector for text elements (e.g. paragraphs, sub headers)
-    )
+    TEXT_CSS: str = None  # CSS Selector for text elements (e.g. paragraphs, sub headers)
 
     def __init__(self, proxies: Optional[dict] = None):
         self.session = requests.session()
@@ -65,8 +62,7 @@ class TextScraper:
             return "\n\n".join(ps)
         else:
             raise NotImplementedError(
-                "Scraper should provide TEXT_CSS, override text_from_html, "
-                "or override scrape_article"
+                "Scraper should provide TEXT_CSS, override text_from_html, " "or override scrape_article"
             )
 
 
@@ -87,9 +83,7 @@ class Scraper(TextScraper):
     COLUMNS: dict = None
     CONTINUE_ON_ERROR = False
 
-    def scrape_articles_by_date(
-        self, urls=None, from_date: date = None, to_date: date = None
-    ):
+    def scrape_articles_by_date(self, urls=None, from_date: date = None, to_date: date = None):
         # Scrapers should yield articles from newest to oldest, so we can break when passing the from_date
         def filter_by_from_date(articles: Iterable[dict], from_date: date):
             for a in articles:
@@ -202,9 +196,7 @@ class Scraper(TextScraper):
             import json
 
             print(json.dumps(article, indent=2, default=str))
-            raise ValueError(
-                f"Article {article['url']} has empty text {repr(article['text'])}!"
-            )
+            raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
         for key in set(article.keys()) - {"date", "text", "title", "url"}:
             if article[key] is None:
                 del article[key]

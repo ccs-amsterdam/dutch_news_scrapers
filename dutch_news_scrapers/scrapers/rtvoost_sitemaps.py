@@ -1,17 +1,14 @@
-import requests
+
 
 from lxml import etree
-import xmltodict
 import datetime
-import logging
 from typing import Iterable
-
-import requests
 from lxml.html import HtmlElement
-
-from dutch_news_scrapers.scraper import TextScraper, Scraper
-from dutch_news_scrapers.tools import response_to_dom
+from scraper import TextScraper, Scraper
+from tools import response_to_dom
 import re
+
+
 
 def fix_date(date):
     if date.endswith("Z"):
