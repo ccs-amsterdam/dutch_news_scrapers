@@ -37,22 +37,3 @@ class DHFMScraper(Scraper):
                 print(doc)
                 if doc["url"].startswith("https://www.denhaagfm.nl/dhfm"):
                     yield doc
-
-    def scrape_article(self, url: str) -> dict:
-        """
-        Scrape the given article, returning a document dict that can e.g. be uploaded to AmCAT.
-        If the article could not be scraped, raises an exception
-        :param url: URL of the article
-        :return: dict with all needed article fields
-        """
-        logging.info(f"scraping article for {url}")
-        r = requests.get(url)
-        if r.status_code in (403, 404, 410):
-            raise ArticleDoesNotExist(f"HTTP {r.status_code}: {url}")
-        article ={}
-        article['url']=url
-        title=
-        
-        article['title']=title
-
-        return article
