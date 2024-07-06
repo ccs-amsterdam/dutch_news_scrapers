@@ -9,7 +9,11 @@ from amcat4py import AmcatClient
 from requests import HTTPError
 
 from dutch_news_scrapers.scraper import Scraper
-from dutch_news_scrapers.scrapers import get_all_scrapers, get_scraper_for_publisher, get_scraper_for_url
+from dutch_news_scrapers.scrapers import (
+    get_all_scrapers,
+    get_scraper_for_publisher,
+    get_scraper_for_url,
+)
 from dutch_news_scrapers.tools import get_chunks
 
 
@@ -18,23 +22,32 @@ def texts_status(args):
     counts = {}
 
     for d in conn.query(args.index, fields=["publisher", "url", "status"]):
-        publisher = d['publisher']
+        publisher = d["publisher"]
         if publisher not in counts:
-            counts[publisher] = {"complete": 0, "incomplete": 0, "missing": 0, "skip": 0}
+            counts[publisher] = {
+                "complete": 0,
+                "incomplete": 0,
+                "missing": 0,
+                "skip": 0,
+            }
         c = counts[publisher]
-        if 'url' not in d:
-            c['skip'] += 1
-        elif d.get('status') == "incomplete":
+        if "url" not in d:
+            c["skip"] += 1
+        elif d.get("status") == "incomplete":
             try:
-                scraper = get_scraper_for_url(d['url'])
-                c['incomplete'] += 1
+                scraper = get_scraper_for_url(d["url"])
+                c["incomplete"] += 1
             except ValueError:
-                c['missing'] += 1
+                c["missing"] += 1
         else:
-            c['complete'] += 1
-    print(f"{'Publisher':30} {'Complete':>10} {'Incomplete':>10} {'Missing':>10} {'Skip':>10}")
+            c["complete"] += 1
+    print(
+        f"{'Publisher':30} {'Complete':>10} {'Incomplete':>10} {'Missing':>10} {'Skip':>10}"
+    )
     for publisher, c in counts.items():
-        print(f"{publisher:30} {c['complete']:10} {c['incomplete']:10} {c['missing']:10} {c['skip']:10}")
+        print(
+            f"{publisher:30} {c['complete']:10} {c['incomplete']:10} {c['missing']:10} {c['skip']:10}"
+        )
 
 
 def update_texts(args):
@@ -42,10 +55,14 @@ def update_texts(args):
     scraper = scraper_class()
     conn = AmcatClient(args.server)
 
-    articles = conn.query(args.index, fields=["url"], filters={'publisher': args.publisher, 'status': 'incomplete'})
+    articles = conn.query(
+        args.index,
+        fields=["url"],
+        filters={"publisher": args.publisher, "status": "incomplete"},
+    )
     n = 0
     for d in articles:
-        url = d.get('url')
+        url = d.get("url")
         print(f"  {d['_id']}: {url}")
         if not url:
             continue
@@ -53,13 +70,15 @@ def update_texts(args):
             text = scraper.scrape_text(url)
         except HTTPError as e:
             if e.response.status_code in (403, 404):
-                logging.warning(f"HTTP {e.response.status_code} on {url}, setting status to error and skipping")
-                conn.update_document(args.index, d['_id'], {'status': 'error'})
+                logging.warning(
+                    f"HTTP {e.response.status_code} on {url}, setting status to error and skipping"
+                )
+                conn.update_document(args.index, d["_id"], {"status": "error"})
                 continue
             else:
                 raise
         n += 1
-        conn.update_document(args.index, d['_id'], {'text': text, 'status': 'complete'})
+        conn.update_document(args.index, d["_id"], {"text": text, "status": "complete"})
     print(f"Updated {n} documents")
 
 
@@ -75,7 +94,7 @@ def listscrapers(args):
 def run(args):
     scraper_class = get_scraper_for_publisher(args.publisher)
     scraper: Scraper = scraper_class()
-   # assert isinstance(scraper, Scraper)
+    # assert isinstance(scraper, Scraper)
 
     conn = AmcatClient(args.server)
     if conn.login_required():
@@ -84,10 +103,15 @@ def run(args):
         conn.delete_index(args.index)
     if not conn.check_index(args.index):
         conn.create_index(args.index)
-    conn.set_fields(args.index, scraper.columns())
+        conn.set_fields(args.index, scraper.columns())
 
     logging.info(f"Scraping {scraper} into AmCAT {args.server}:{args.index}")
-    urls = {a.get('url') for a in conn.query(args.index, filters={"publisher": scraper.PUBLISHER}, fields=["url"])}
+    urls = {
+        a.get("url")
+        for a in conn.query(
+            args.index, filters={"publisher": scraper.PUBLISHER}, fields=["url"]
+        )
+    }
 
     logging.info(f"Already {len(urls)} in AmCAT")
 
@@ -127,39 +151,60 @@ def date(s):
 
 
 parser = argparse.ArgumentParser()
-subparsers = parser.add_subparsers(dest="action", title="action", help='Action to perform:', required=True)
+subparsers = parser.add_subparsers(
+    dest="action", title="action", help="Action to perform:", required=True
+)
 
-p = subparsers.add_parser('list', help='List scrapers')
+p = subparsers.add_parser("list", help="List scrapers")
 p.set_defaults(func=listscrapers)
 
-p = subparsers.add_parser('run', help='Run a scraper for a single publisher')
-p.add_argument("server", help="AmCAT host name",)
+p = subparsers.add_parser("run", help="Run a scraper for a single publisher")
+p.add_argument(
+    "server",
+    help="AmCAT host name",
+)
 p.add_argument("index", help="AmCAT index")
 p.add_argument("publisher", help="Publisher of the scraper to run")
-p.add_argument("--batchsize", help="Batch size for uploading to AmCAT", type=int, default=100)
+p.add_argument(
+    "--batchsize", help="Batch size for uploading to AmCAT", type=int, default=100
+)
 p.add_argument("--from_date", type=date)
 p.add_argument("--to_date", type=date)
 p.add_argument("--dry-run", action="store_true")
-p.add_argument("--delete-index", action="store_true", help="Delete (and recreate) index before scraping")
+p.add_argument(
+    "--delete-index",
+    action="store_true",
+    help="Delete (and recreate) index before scraping",
+)
 p.set_defaults(func=run)
 
-p = subparsers.add_parser('texts-update', help='Add texts to existing documents')
-p.add_argument("server", help="AmCAT host name",)
+p = subparsers.add_parser("texts-update", help="Add texts to existing documents")
+p.add_argument(
+    "server",
+    help="AmCAT host name",
+)
 p.add_argument("index", help="AmCAT index")
 p.add_argument("publisher", help="Publisher of the scraper to run")
 p.set_defaults(func=update_texts)
 
-p = subparsers.add_parser('texts-status', help='View text and scraper status')
-p.add_argument("server", help="AmCAT host name",)
+p = subparsers.add_parser("texts-status", help="View text and scraper status")
+p.add_argument(
+    "server",
+    help="AmCAT host name",
+)
 p.add_argument("index", help="AmCAT index")
 p.set_defaults(func=texts_status)
 
-p = subparsers.add_parser('scrape-url', help='Run a scraper for a single article')
+p = subparsers.add_parser("scrape-url", help="Run a scraper for a single article")
 p.add_argument("url", help="URL of the article to scrape")
-p.add_argument("--dry-run", help="Dry run: print result but don't upload", action="store_true")
+p.add_argument(
+    "--dry-run", help="Dry run: print result but don't upload", action="store_true"
+)
 p.set_defaults(func=scrapeurl)
 
 args = parser.parse_args()
 
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s %(name)-12s %(levelname)-5s] %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="[%(asctime)s %(name)-12s %(levelname)-5s] %(message)s"
+)
 args.func(args)

@@ -1,6 +1,7 @@
 from datetime import date
 import logging
 from typing import Iterable, Optional
+import pytz
 
 import requests
 from lxml.html import HtmlElement
@@ -13,21 +14,25 @@ class ArticleDoesNotExist(Exception):
     pass
 
 
-DEFAULT_COLUMNS = {"tags": "tag",
-                   "author": "keyword",
-                   "publisher": "keyword",
-                   }
+DEFAULT_COLUMNS = {
+    "tags": "tag",
+    "author": "keyword",
+    "publisher": "keyword",
+}
 
- 
+
 class TextScraper:
     """
     Scraper to get the text for an article whose metadata is already scraped (e.g. through RSS or LN/Coosto)
     """
+
     DOMAIN: str = None
     PUBLISHER: str = None
-    TEXT_CSS: str = None  # CSS Selector for text elements (e.g. paragraphs, sub headers)
+    TEXT_CSS: str = (
+        None  # CSS Selector for text elements (e.g. paragraphs, sub headers)
+    )
 
-    def __init__(self, proxies: Optional[dict]=None):
+    def __init__(self, proxies: Optional[dict] = None):
         self.session = requests.session()
         if proxies:
             self.session.proxies.update(proxies)
@@ -59,12 +64,14 @@ class TextScraper:
             ps = [p.strip() for p in ps if p.strip()]
             return "\n\n".join(ps)
         else:
-            raise NotImplementedError("Scraper should provide TEXT_CSS, override text_from_html, "
-                                      "or override scrape_article")
+            raise NotImplementedError(
+                "Scraper should provide TEXT_CSS, override text_from_html, "
+                "or override scrape_article"
+            )
 
 
 def get_text(element):
-    #Thanks https://stackoverflow.com/questions/18660382
+    # Thanks https://stackoverflow.com/questions/18660382
     for br in element.xpath(".//br"):
         br.tail = "\n\n" + br.tail if br.tail else "\n\n"
     return element.text_content()
@@ -80,18 +87,22 @@ class Scraper(TextScraper):
     COLUMNS: dict = None
     CONTINUE_ON_ERROR = False
 
-
-    def scrape_articles_by_date(self, urls=None, from_date:date=None, to_date:date=None):
+    def scrape_articles_by_date(
+        self, urls=None, from_date: date = None, to_date: date = None
+    ):
         # Scrapers should yield articles from newest to oldest, so we can break when passing the from_date
         def filter_by_from_date(articles: Iterable[dict], from_date: date):
             for a in articles:
-                if a['date'] < from_date:
+                utc = pytz.UTC
+                a["date"] = a["date"].replace(tzinfo=utc)
+                from_date = from_date.replace(tzinfo=utc)
+                if a["date"] < from_date:
                     break
                 yield a
 
         def filter_by_to_date(articles: Iterable[dict], to_date: date):
             for a in articles:
-                if a['date'] <= to_date:
+                if a["date"] <= to_date:
                     yield a
 
         articles = self.scrape_articles(urls)
@@ -101,8 +112,6 @@ class Scraper(TextScraper):
             articles = filter_by_to_date(articles, to_date=to_date)
         return articles
 
-
-
     def scrape_articles(self, urls=None) -> Iterable[dict]:
         """
         Scrape all articles from this scraper
@@ -111,13 +120,13 @@ class Scraper(TextScraper):
         if urls is None:
             urls = set()
         for d in self.get_links():
-            if isinstance(d,str):
+            if isinstance(d, str):
                 d = dict(url=d)
-            if d['url'] in urls:
+            if d["url"] in urls:
                 continue
-            urls.add(d['url'])
-            if 'publisher' not in d and self.PUBLISHER:
-                d['publisher'] = self.PUBLISHER
+            urls.add(d["url"])
+            if "publisher" not in d and self.PUBLISHER:
+                d["publisher"] = self.PUBLISHER
             try:
                 yield self.scrape_article_dict(d)
             except ArticleDoesNotExist as e:
@@ -128,11 +137,11 @@ class Scraper(TextScraper):
                 else:
                     raise
 
-    def scrape_article_dict(self,d):
-        art = self.scrape_article(d['url'])
+    def scrape_article_dict(self, d):
+        art = self.scrape_article(d["url"])
         d.update(art)
         return d
-    
+
     def get_links(self) -> Iterable[str]:
         """
         Generates all links and optional extra metadata from e.g. newspaper front page
@@ -154,8 +163,6 @@ class Scraper(TextScraper):
                 # yield from self.get_links_from_page(page) # zelfde als for x in ... yield x
                 logging.info(f"Scraping page {page}")
                 yield from self.get_links_from_page(page)
-
-        
 
     def get_links_from_page(self, page: int) -> Iterable[str]:
         """
@@ -188,12 +195,16 @@ class Scraper(TextScraper):
             raise ArticleDoesNotExist(f"HTTP {r.status_code}: {url}")
         dom = response_to_dom(r)
         article = self.meta_from_dom(dom)
-        article['text'] = self.text_from_dom(dom)
-        if 'url' not in article:
-            article['url'] = url
-        if not article.get('text', '').strip():
-            import json; print(json.dumps(article, indent=2, default=str))
-            raise ValueError(f"Article {article['url']} has empty text {repr(article['text'])}!")
+        article["text"] = self.text_from_dom(dom)
+        if "url" not in article:
+            article["url"] = url
+        if not article.get("text", "").strip():
+            import json
+
+            print(json.dumps(article, indent=2, default=str))
+            raise ValueError(
+                f"Article {article['url']} has empty text {repr(article['text'])}!"
+            )
         for key in set(article.keys()) - {"date", "text", "title", "url"}:
             if article[key] is None:
                 del article[key]
@@ -212,5 +223,3 @@ class Scraper(TextScraper):
         if self.COLUMNS:
             result.update(self.COLUMNS)
         return result
-
-
